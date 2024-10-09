@@ -82,7 +82,7 @@ public class LinkStoreMysql extends GraphStore {
   }
 
   public void initialize(Properties props, Phase currentPhase,
-    int threadId) throws IOException, Exception {
+      int threadId) throws IOException, Exception {
     counttable = ConfigUtil.getPropertyRequired(props, Config.COUNT_TABLE);
     if (counttable.equals("")) {
       String msg = "Error! " + Config.COUNT_TABLE + " is empty!"
@@ -106,7 +106,8 @@ public class LinkStoreMysql extends GraphStore {
     port = props.getProperty(CONFIG_PORT);
     defaultDB = ConfigUtil.getPropertyRequired(props, Config.DBID);
 
-    if (port == null || port.equals("")) port = "3306"; //use default port
+    if (port == null || port.equals(""))
+      port = "3306"; // use default port
     debuglevel = ConfigUtil.getDebugLevel(props);
     phase = currentPhase;
 
@@ -115,7 +116,7 @@ public class LinkStoreMysql extends GraphStore {
     }
     if (props.containsKey(CONFIG_DISABLE_BINLOG_LOAD)) {
       disableBinLogForLoad = ConfigUtil.getBool(props,
-                                      CONFIG_DISABLE_BINLOG_LOAD);
+          CONFIG_DISABLE_BINLOG_LOAD);
     }
 
     // connect
@@ -137,7 +138,7 @@ public class LinkStoreMysql extends GraphStore {
     stmt_rw = null;
     Random rng = new Random();
 
-    String jdbcUrl = "jdbc:mysql://"+ host + ":" + port + "/";
+    String jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/";
     if (defaultDB != null) {
       jdbcUrl += defaultDB;
     }
@@ -145,18 +146,22 @@ public class LinkStoreMysql extends GraphStore {
     Class.forName("com.mysql.jdbc.Driver").newInstance();
 
     jdbcUrl += "?elideSetAutoCommits=true" +
-               "&useLocalTransactionState=true" +
-               "&allowMultiQueries=true" +
-               "&useLocalSessionState=true" +
-   /* Need affected row count from queries to distinguish updates/inserts
-    * consistently across different MySql versions (see MySql bug 46675) */
-               "&useAffectedRows=true";
+        "&useLocalTransactionState=true" +
+        "&allowMultiQueries=true" +
+        "&useLocalSessionState=true" +
+        /*
+         * Need affected row count from queries to distinguish updates/inserts
+         * consistently across different MySql versions (see MySql bug 46675)
+         */
+        "&useAffectedRows=true";
 
-    /* Fix for failing connections at high concurrency, short random delay for
-     * each */
+    /*
+     * Fix for failing connections at high concurrency, short random delay for
+     * each
+     */
     try {
       int t = rng.nextInt(1000) + 100;
-      //System.err.println("Sleeping " + t + " msecs");
+      // System.err.println("Sleeping " + t + " msecs");
       Thread.sleep(t);
     } catch (InterruptedException ie) {
     }
@@ -166,7 +171,7 @@ public class LinkStoreMysql extends GraphStore {
 
     try {
       int t = rng.nextInt(1000) + 100;
-      //System.err.println("Sleeping " + t + " msecs");
+      // System.err.println("Sleeping " + t + " msecs");
       Thread.sleep(t);
     } catch (InterruptedException ie) {
     }
@@ -174,11 +179,11 @@ public class LinkStoreMysql extends GraphStore {
     conn_ro = DriverManager.getConnection(jdbcUrl, user, pwd);
     conn_ro.setAutoCommit(true);
 
-    //System.err.println("connected");
+    // System.err.println("connected");
     stmt_rw = conn_rw.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                                      ResultSet.CONCUR_READ_ONLY);
+        ResultSet.CONCUR_READ_ONLY);
     stmt_ro = conn_ro.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                                      ResultSet.CONCUR_READ_ONLY);
+        ResultSet.CONCUR_READ_ONLY);
 
     if (phase == Phase.LOAD && disableBinLogForLoad) {
       // Turn binary logging off for duration of connection
@@ -190,10 +195,14 @@ public class LinkStoreMysql extends GraphStore {
   @Override
   public void close() {
     try {
-      if (stmt_rw != null) stmt_rw.close();
-      if (stmt_ro != null) stmt_ro.close();
-      if (conn_rw != null) conn_rw.close();
-      if (conn_ro != null) conn_ro.close();
+      if (stmt_rw != null)
+        stmt_rw.close();
+      if (stmt_ro != null)
+        stmt_ro.close();
+      if (conn_rw != null)
+        conn_rw.close();
+      if (conn_ro != null)
+        conn_ro.close();
     } catch (SQLException e) {
       logger.error("Error while closing MySQL connection: ", e);
     }
@@ -224,9 +233,9 @@ public class LinkStoreMysql extends GraphStore {
   private static final HashSet<String> retrySQLStates = populateRetrySQLStates();
 
   /**
-   *  Populate retrySQLStates
-   *  SQLState codes are defined in MySQL Connector/J documentation:
-   *  http://dev.mysql.com/doc/refman/5.6/en/connector-j-reference-error-sqlstates.html
+   * Populate retrySQLStates
+   * SQLState codes are defined in MySQL Connector/J documentation:
+   * http://dev.mysql.com/doc/refman/5.6/en/connector-j-reference-error-sqlstates.html
    */
   private static HashSet<String> populateRetrySQLStates() {
     HashSet<String> states = new HashSet<String>();
@@ -237,13 +246,14 @@ public class LinkStoreMysql extends GraphStore {
 
   /**
    * Handle SQL exception by logging error and selecting how to respond
+   * 
    * @param ex SQLException thrown by MySQL JDBC driver
    * @return true if transaction should be retried
    */
   private boolean processSQLException(SQLException ex, String op) {
     boolean retry = retrySQLStates.contains(ex.getSQLState());
     String msg = "SQLException thrown by MySQL driver during execution of " +
-                 "operation: " + op + ".  ";
+        "operation: " + op + ".  ";
     msg += "Message was: '" + ex.getMessage() + "'.  ";
     msg += "SQLState was: " + ex.getSQLState() + ".  ";
 
@@ -254,28 +264,29 @@ public class LinkStoreMysql extends GraphStore {
       msg += "Error is probably non-transient, will abort operation.";
       logger.error(msg);
     }
+    retry = false;
     return retry;
   }
 
   // get count for testing purpose
   private void testCount(Statement stmt, String dbid,
-                         String assoctable, String counttable,
-                         long id, long link_type)
-    throws Exception {
+      String assoctable, String counttable,
+      long id, long link_type)
+      throws Exception {
 
     String select1 = "SELECT COUNT(id2)" +
-                     " FROM " + dbid + "." + assoctable +
-                     " WHERE id1 = " + id +
-                     " AND link_type = " + link_type +
-                     " AND visibility = " + LinkStore.VISIBILITY_DEFAULT;
+        " FROM " + dbid + "." + assoctable +
+        " WHERE id1 = " + id +
+        " AND link_type = " + link_type +
+        " AND visibility = " + LinkStore.VISIBILITY_DEFAULT;
 
     String select2 = "SELECT COALESCE (SUM(count), 0)" +
-                     " FROM " + dbid + "." + counttable +
-                     " WHERE id = " + id +
-                     " AND link_type = " + link_type;
+        " FROM " + dbid + "." + counttable +
+        " WHERE id = " + id +
+        " AND link_type = " + link_type;
 
     String verify = "SELECT IF ((" + select1 +
-                    ") = (" + select2 + "), 1, 0) as result";
+        ") = (" + select2 + "), 1, 0) as result";
 
     ResultSet result = stmt.executeQuery(verify);
 
@@ -286,19 +297,20 @@ public class LinkStoreMysql extends GraphStore {
 
     if (ret != 1) {
       throw new Exception("Data inconsistency between " + assoctable +
-                          " and " + counttable);
+          " and " + counttable);
     }
   }
 
   @Override
   public boolean addLink(String dbid, Link l, boolean noinverse)
-    throws Exception {
+      throws Exception {
     while (true) {
       try {
         return addLinkImpl(dbid, l, noinverse);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "addLink")) {
-          throw ex;
+          // throw ex;
+          return false;
         }
       }
     }
@@ -307,10 +319,10 @@ public class LinkStoreMysql extends GraphStore {
   private boolean addLinkImpl(String dbid, Link l, boolean noinverse)
       throws Exception {
 
-     if (Level.DEBUG.isGreaterOrEqual(debuglevel)) {
+    if (Level.DEBUG.isGreaterOrEqual(debuglevel)) {
       logger.debug("addLink " + l.id1 +
-                         "." + l.id2 +
-                         "." + l.link_type);
+          "." + l.id2 +
+          "." + l.link_type);
     }
 
     // if the link is already there then update its visibility
@@ -374,16 +386,16 @@ public class LinkStoreMysql extends GraphStore {
       // The update happens atomically, with the latest count and version
       long currentTime = (new Date()).getTime();
       String updatecount = "INSERT INTO " + dbid + "." + counttable +
-                      "(id, link_type, count, time, version) " +
-                      "VALUES (" + l.id1 +
-                      ", " + l.link_type +
-                      ", " + base_count +
-                      ", " + currentTime +
-                      ", " + 0 + ") " +
-                      "ON DUPLICATE KEY UPDATE" +
-                      " count = count + " + update_count +
-                      ", version = version + 1 " +
-                      ", time = " + currentTime + ";";
+          "(id, link_type, count, time, version) " +
+          "VALUES (" + l.id1 +
+          ", " + l.link_type +
+          ", " + base_count +
+          ", " + currentTime +
+          ", " + 0 + ") " +
+          "ON DUPLICATE KEY UPDATE" +
+          " count = count + " + update_count +
+          ", version = version + 1 " +
+          ", time = " + currentTime + ";";
 
       if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
         logger.trace(updatecount);
@@ -400,13 +412,13 @@ public class LinkStoreMysql extends GraphStore {
     if (update_data) {
       // query to update link data (the first query only updates visibility)
       String updatedata = "UPDATE " + dbid + "." + linktable + " SET" +
-                  " visibility = " + l.visibility +
-                  ", data = " +  stringLiteral(l.data)+
-                  ", time = " + l.time +
-                  ", version = " + l.version +
-                  " WHERE id1 = " + l.id1 +
-                  " AND id2 = " + l.id2 +
-                  " AND link_type = " + l.link_type + "; commit;";
+          " visibility = " + l.visibility +
+          ", data = " + stringLiteral(l.data) +
+          ", time = " + l.time +
+          ", version = " + l.version +
+          " WHERE id1 = " + l.id1 +
+          " AND id2 = " + l.id2 +
+          " AND link_type = " + l.link_type + "; commit;";
       if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
         logger.trace(updatedata);
       }
@@ -422,6 +434,7 @@ public class LinkStoreMysql extends GraphStore {
 
   /**
    * Internal method: add links without updating the count
+   * 
    * @param dbid
    * @param links
    * @return
@@ -435,8 +448,8 @@ public class LinkStoreMysql extends GraphStore {
     // query to insert a link;
     StringBuilder sb = new StringBuilder();
     sb.append("INSERT INTO " + dbid + "." + linktable +
-                    "(id1, id2, link_type, " +
-                    "visibility, data, time, version) VALUES ");
+        "(id1, id2, link_type, " +
+        "visibility, data, time, version) VALUES ");
     boolean first = true;
     for (Link l : links) {
       if (first) {
@@ -460,18 +473,19 @@ public class LinkStoreMysql extends GraphStore {
 
     int nrows = stmt_rw.executeUpdate(insert);
     return nrows;
-}
+  }
 
   @Override
   public boolean deleteLink(String dbid, long id1, long link_type, long id2,
-                         boolean noinverse, boolean expunge)
-    throws Exception {
+      boolean noinverse, boolean expunge)
+      throws Exception {
     while (true) {
       try {
         return deleteLinkImpl(dbid, id1, link_type, id2, noinverse, expunge);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "deleteLink")) {
-          throw ex;
+          // throw ex;
+          return false;
         }
       }
     }
@@ -481,8 +495,8 @@ public class LinkStoreMysql extends GraphStore {
       boolean noinverse, boolean expunge) throws Exception {
     if (Level.DEBUG.isGreaterOrEqual(debuglevel)) {
       logger.debug("deleteLink " + id1 +
-                         "." + id2 +
-                         "." + link_type);
+          "." + id2 +
+          "." + link_type);
     }
 
     // First do a select to check if the link is not there, is there and
@@ -491,15 +505,15 @@ public class LinkStoreMysql extends GraphStore {
     // In case of VISIBILITY_DEFAULT, later we need to mark the link as
     // hidden, and update counttable.
     // We lock the row exclusively because we rely on getting the correct
-    // value of visible to maintain link counts.  Without the lock,
+    // value of visible to maintain link counts. Without the lock,
     // a concurrent transaction could also see the link as visible and
     // we would double-decrement the link count.
     String select = "SELECT visibility" +
-                    " FROM " + dbid + "." + linktable +
-                    " WHERE id1 = " + id1 +
-                    " AND id2 = " + id2 +
-                    " AND link_type = " + link_type +
-                    " FOR UPDATE;";
+        " FROM " + dbid + "." + linktable +
+        " WHERE id1 = " + id1 +
+        " AND id2 = " + id2 +
+        " AND link_type = " + link_type +
+        " FOR UPDATE;";
 
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace(select);
@@ -516,16 +530,14 @@ public class LinkStoreMysql extends GraphStore {
 
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace(String.format("(%d, %d, %d) visibility = %d",
-                id1, link_type, id2, visibility));
+          id1, link_type, id2, visibility));
     }
 
     if (!found) {
       // do nothing
-    }
-    else if (visibility == VISIBILITY_HIDDEN && !expunge) {
+    } else if (visibility == VISIBILITY_HIDDEN && !expunge) {
       // do nothing
-    }
-    else {
+    } else {
       // Only update count if link is present and visible
       boolean updateCount = (visibility != VISIBILITY_HIDDEN);
 
@@ -534,15 +546,15 @@ public class LinkStoreMysql extends GraphStore {
 
       if (!expunge) {
         delete = "UPDATE " + dbid + "." + linktable +
-                 " SET visibility = " + VISIBILITY_HIDDEN +
-                 " WHERE id1 = " + id1 +
-                 " AND id2 = " + id2 +
-                 " AND link_type = " + link_type + ";";
+            " SET visibility = " + VISIBILITY_HIDDEN +
+            " WHERE id1 = " + id1 +
+            " AND id2 = " + id2 +
+            " AND link_type = " + link_type + ";";
       } else {
         delete = "DELETE FROM " + dbid + "." + linktable +
-                 " WHERE id1 = " + id1 +
-                 " AND id2 = " + id2 +
-                 " AND link_type = " + link_type + ";";
+            " WHERE id1 = " + id1 +
+            " AND id2 = " + id2 +
+            " AND link_type = " + link_type + ";";
       }
 
       if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
@@ -553,22 +565,22 @@ public class LinkStoreMysql extends GraphStore {
 
       // update count table
       // * if found (id1, link_type) in count table, set
-      //   count = (count == 1) ? 0) we decrease the value of count
-      //   column by 1;
+      // count = (count == 1) ? 0) we decrease the value of count
+      // column by 1;
       // * otherwise, insert new link with count column = 0
       // The update happens atomically, with the latest count and version
       long currentTime = (new Date()).getTime();
       String update = "INSERT INTO " + dbid + "." + counttable +
-                      " (id, link_type, count, time, version) " +
-                      "VALUES (" + id1 +
-                      ", " + link_type +
-                      ", 0" +
-                      ", " + currentTime +
-                      ", " + 0 + ") " +
-                      "ON DUPLICATE KEY UPDATE" +
-                      " count = IF (count = 0, 0, count - 1)" +
-                      ", time = " + currentTime +
-                      ", version = version + 1;";
+          " (id, link_type, count, time, version) " +
+          "VALUES (" + id1 +
+          ", " + link_type +
+          ", 0" +
+          ", " + currentTime +
+          ", " + 0 + ") " +
+          "ON DUPLICATE KEY UPDATE" +
+          " count = IF (count = 0, 0, count - 1)" +
+          ", time = " + currentTime +
+          ", version = version + 1;";
 
       if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
         logger.trace(update);
@@ -588,53 +600,54 @@ public class LinkStoreMysql extends GraphStore {
 
   @Override
   public boolean updateLink(String dbid, Link l, boolean noinverse)
-    throws Exception {
+      throws Exception {
     // Retry logic is in addLink
     boolean added = addLink(dbid, l, noinverse);
     return !added; // return true if updated instead of added
   }
 
-
   // lookup using id1, type, id2
   @Override
   public Link getLink(String dbid, long id1, long link_type, long id2)
-    throws Exception {
+      throws Exception {
     while (true) {
       try {
         return getLinkImpl(dbid, id1, link_type, id2);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "getLink")) {
-          throw ex;
+          // throw ex;
+          return null;
         }
       }
     }
   }
 
   private Link getLinkImpl(String dbid, long id1, long link_type, long id2)
-    throws Exception {
-    Link res[] = multigetLinks(dbid, id1, link_type, new long[] {id2});
-    if (res == null) return null;
-    assert(res.length <= 1);
+      throws Exception {
+    Link res[] = multigetLinks(dbid, id1, link_type, new long[] { id2 });
+    if (res == null)
+      return null;
+    assert (res.length <= 1);
     return res.length == 0 ? null : res[0];
   }
 
-
   @Override
   public Link[] multigetLinks(String dbid, long id1, long link_type,
-                              long[] id2s) throws Exception {
+      long[] id2s) throws Exception {
     while (true) {
       try {
         return multigetLinksImpl(dbid, id1, link_type, id2s);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "multigetLinks")) {
-          throw ex;
+          // throw ex;
+          return null;
         }
       }
     }
   }
 
   private Link[] multigetLinksImpl(String dbid, long id1, long link_type,
-                                long[] id2s) throws Exception {
+      long[] id2s) throws Exception {
     StringBuilder querySB = new StringBuilder();
     querySB.append(" select id1, id2, link_type," +
         " visibility, data, time, " +
@@ -642,7 +655,7 @@ public class LinkStoreMysql extends GraphStore {
         " where id1 = " + id1 + " and link_type = " + link_type +
         " and id2 in (");
     boolean first = true;
-    for (long id2: id2s) {
+    for (long id2 : id2s) {
       if (first) {
         first = false;
       } else {
@@ -661,7 +674,7 @@ public class LinkStoreMysql extends GraphStore {
     ResultSet rs = stmt_ro.executeQuery(query);
 
     // Get the row count to allocate result array
-    assert(rs.getType() != ResultSet.TYPE_FORWARD_ONLY);
+    assert (rs.getType() != ResultSet.TYPE_FORWARD_ONLY);
     rs.last();
     int count = rs.getRow();
     rs.beforeFirst();
@@ -672,7 +685,7 @@ public class LinkStoreMysql extends GraphStore {
       Link l = createLinkFromRow(rs);
       if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
         logger.trace("Lookup result: " + id1 + "," + link_type + "," +
-                  l.id2 + " found");
+            l.id2 + " found");
       }
       results[i++] = l;
     }
@@ -682,42 +695,43 @@ public class LinkStoreMysql extends GraphStore {
   // lookup using just id1, type
   @Override
   public Link[] getLinkList(String dbid, long id1, long link_type)
-    throws Exception {
+      throws Exception {
     // Retry logic in getLinkList
     return getLinkList(dbid, id1, link_type, 0, Long.MAX_VALUE, 0, rangeLimit);
   }
 
   @Override
   public Link[] getLinkList(String dbid, long id1, long link_type,
-                            long minTimestamp, long maxTimestamp,
-                            int offset, int limit)
-    throws Exception {
+      long minTimestamp, long maxTimestamp,
+      int offset, int limit)
+      throws Exception {
     while (true) {
       try {
         return getLinkListImpl(dbid, id1, link_type, minTimestamp,
-                               maxTimestamp, offset, limit);
+            maxTimestamp, offset, limit);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "getLinkListImpl")) {
-          throw ex;
+          // throw ex;
+          return null;
         }
       }
     }
   }
 
   private Link[] getLinkListImpl(String dbid, long id1, long link_type,
-        long minTimestamp, long maxTimestamp,
-        int offset, int limit)
-            throws Exception {
+      long minTimestamp, long maxTimestamp,
+      int offset, int limit)
+      throws Exception {
     String query = " select id1, id2, link_type," +
-                   " visibility, data, time," +
-                   " version from " + dbid + "." + linktable +
-                   " FORCE INDEX(`id1_type`) " +
-                   " where id1 = " + id1 + " and link_type = " + link_type +
-                   " and time >= " + minTimestamp +
-                   " and time <= " + maxTimestamp +
-                   " and visibility = " + LinkStore.VISIBILITY_DEFAULT +
-                   " order by time desc " +
-                   " limit " + offset + "," + limit + ";";
+        " visibility, data, time," +
+        " version from " + dbid + "." + linktable +
+        " FORCE INDEX(`id1_type`) " +
+        " where id1 = " + id1 + " and link_type = " + link_type +
+        " and time >= " + minTimestamp +
+        " and time <= " + maxTimestamp +
+        " and visibility = " + LinkStore.VISIBILITY_DEFAULT +
+        " order by time desc " +
+        " limit " + offset + "," + limit + ";";
 
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("Query is " + query);
@@ -727,14 +741,14 @@ public class LinkStoreMysql extends GraphStore {
 
     // Find result set size
     // be sure we fast forward to find result set size
-    assert(rs.getType() != ResultSet.TYPE_FORWARD_ONLY);
+    assert (rs.getType() != ResultSet.TYPE_FORWARD_ONLY);
     rs.last();
     int count = rs.getRow();
     rs.beforeFirst();
 
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("Range lookup result: " + id1 + "," + link_type +
-                         " is " + count);
+          " is " + count);
     }
     if (count == 0) {
       return null;
@@ -748,7 +762,7 @@ public class LinkStoreMysql extends GraphStore {
       links[i] = l;
       i++;
     }
-    assert(i == count);
+    assert (i == count);
     return links;
   }
 
@@ -767,23 +781,24 @@ public class LinkStoreMysql extends GraphStore {
   // count the #links
   @Override
   public long countLinks(String dbid, long id1, long link_type)
-    throws Exception {
+      throws Exception {
     while (true) {
       try {
         return countLinksImpl(dbid, id1, link_type);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "countLinks")) {
           throw ex;
+          // return null;
         }
       }
     }
   }
 
   private long countLinksImpl(String dbid, long id1, long link_type)
-        throws Exception {
+      throws Exception {
     long count = 0;
     String query = " select count from " + dbid + "." + counttable +
-                   " where id = " + id1 + " and link_type = " + link_type + ";";
+        " where id = " + id1 + " and link_type = " + link_type + ";";
 
     ResultSet rs = stmt_ro.executeQuery(query);
     boolean found = false;
@@ -800,7 +815,7 @@ public class LinkStoreMysql extends GraphStore {
 
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("Count result: " + id1 + "," + link_type +
-                         " is " + found + " and " + count);
+          " is " + found + " and " + count);
     }
 
     return count;
@@ -838,7 +853,7 @@ public class LinkStoreMysql extends GraphStore {
 
   @Override
   public void addBulkCounts(String dbid, List<LinkCount> counts)
-                                                throws Exception {
+      throws Exception {
     while (true) {
       try {
         addBulkCountsImpl(dbid, counts);
@@ -852,7 +867,7 @@ public class LinkStoreMysql extends GraphStore {
   }
 
   private void addBulkCountsImpl(String dbid, List<LinkCount> counts)
-                                                throws Exception {
+      throws Exception {
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("addBulkCounts: " + counts.size() + " link counts");
     }
@@ -864,17 +879,17 @@ public class LinkStoreMysql extends GraphStore {
         "(id, link_type, count, time, version) " +
         "VALUES ");
     boolean first = true;
-    for (LinkCount count: counts) {
+    for (LinkCount count : counts) {
       if (first) {
         first = false;
       } else {
         sqlSB.append(",");
       }
       sqlSB.append("(" + count.id1 +
-        ", " + count.link_type +
-        ", " + count.count +
-        ", " + count.time +
-        ", " + count.version + ")");
+          ", " + count.link_type +
+          ", " + count.count +
+          ", " + count.time +
+          ", " + count.version + ")");
     }
 
     String sql = sqlSB.toString();
@@ -897,7 +912,7 @@ public class LinkStoreMysql extends GraphStore {
     checkNodeTableConfigured();
     // Truncate table deletes all data and allows us to reset autoincrement
     stmt_rw.execute(String.format("TRUNCATE TABLE `%s`.`%s`;",
-                 dbid, nodetable));
+        dbid, nodetable));
     stmt_rw.execute(String.format("ALTER TABLE `%s`.`%s` " +
         "AUTO_INCREMENT = %d;", dbid, nodetable, startID));
   }
@@ -917,7 +932,7 @@ public class LinkStoreMysql extends GraphStore {
 
   private long addNodeImpl(String dbid, Node node) throws Exception {
     long ids[] = bulkAddNodes(dbid, Collections.singletonList(node));
-    assert(ids.length == 1);
+    assert (ids.length == 1);
     return ids[0];
   }
 
@@ -941,7 +956,7 @@ public class LinkStoreMysql extends GraphStore {
         "(type, version, time, data) " +
         "VALUES ");
     boolean first = true;
-    for (Node node: nodes) {
+    for (Node node : nodes) {
       if (first) {
         first = false;
       } else {
@@ -969,7 +984,7 @@ public class LinkStoreMysql extends GraphStore {
           + " expected " + nodes.size() + " actual " + i);
     }
 
-    assert(!rs.next()); // check done
+    assert (!rs.next()); // check done
     rs.close();
 
     return newIds;
@@ -991,15 +1006,15 @@ public class LinkStoreMysql extends GraphStore {
   private Node getNodeImpl(String dbid, int type, long id) throws Exception {
     checkNodeTableConfigured();
     ResultSet rs = stmt_ro.executeQuery(
-      "SELECT id, type, version, time, data " +
-      "FROM `" + dbid + "`.`" + nodetable + "` " +
-      "WHERE id=" + id + ";");
+        "SELECT id, type, version, time, data " +
+            "FROM `" + dbid + "`.`" + nodetable + "` " +
+            "WHERE id=" + id + ";");
     if (rs.next()) {
       Node res = new Node(rs.getLong(1), rs.getInt(2),
-           rs.getLong(3), rs.getInt(4), rs.getBytes(5));
+          rs.getLong(3), rs.getInt(4), rs.getBytes(5));
 
       // Check that multiple rows weren't returned
-      assert(rs.next() == false);
+      assert (rs.next() == false);
       rs.close();
       if (res.type != type) {
         return null;
@@ -1026,9 +1041,9 @@ public class LinkStoreMysql extends GraphStore {
   private boolean updateNodeImpl(String dbid, Node node) throws Exception {
     checkNodeTableConfigured();
     String sql = "UPDATE `" + dbid + "`.`" + nodetable + "`" +
-            " SET " + "version=" + node.version + ", time=" + node.time
-                   + ", data=" + stringLiteral(node.data) +
-            " WHERE id=" + node.id + " AND type=" + node.type + "; commit;";
+        " SET " + "version=" + node.version + ", time=" + node.time
+        + ", data=" + stringLiteral(node.data) +
+        " WHERE id=" + node.id + " AND type=" + node.type + "; commit;";
 
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace(sql);
@@ -1036,10 +1051,13 @@ public class LinkStoreMysql extends GraphStore {
 
     int rows = stmt_rw.executeUpdate(sql);
 
-    if (rows == 1) return true;
-    else if (rows == 0) return false;
-    else throw new Exception("Did not expect " + rows +  "affected rows: only "
-        + "expected update to affect at most one row");
+    if (rows == 1)
+      return true;
+    else if (rows == 0)
+      return false;
+    else
+      throw new Exception("Did not expect " + rows + "affected rows: only "
+          + "expected update to affect at most one row");
   }
 
   @Override
@@ -1049,7 +1067,8 @@ public class LinkStoreMysql extends GraphStore {
         return deleteNodeImpl(dbid, type, id);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "deleteNode")) {
-          throw ex;
+          // throw ex;
+          return false;
         }
       }
     }
@@ -1059,7 +1078,7 @@ public class LinkStoreMysql extends GraphStore {
     checkNodeTableConfigured();
     int rows = stmt_rw.executeUpdate(
         "DELETE FROM `" + dbid + "`.`" + nodetable + "` " +
-        "WHERE id=" + id + " and type =" + type + "; commit;");
+            "WHERE id=" + id + " and type =" + type + "; commit;");
 
     if (rows == 0) {
       return false;
@@ -1067,7 +1086,7 @@ public class LinkStoreMysql extends GraphStore {
       return true;
     } else {
       throw new Exception(rows + " rows modified on delete: should delete " +
-                      "at most one");
+          "at most one");
     }
   }
 
@@ -1076,6 +1095,7 @@ public class LinkStoreMysql extends GraphStore {
    * it will be inserted into a column with latin-1 encoding.
    * Based on information at
    * http://dev.mysql.com/doc/refman/5.1/en/string-literals.html
+   * 
    * @param arr
    * @return
    */
@@ -1123,6 +1143,7 @@ public class LinkStoreMysql extends GraphStore {
   /**
    * Create a mysql hex string literal from array:
    * E.g. [0xf, bc, 4c, 4] converts to x'0fbc4c03'
+   * 
    * @param arr
    * @return the mysql hex literal including quotes
    */
