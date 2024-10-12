@@ -28,14 +28,16 @@ import com.facebook.LinkBench.distributions.LinkDistributions.LinkDistribution;
 
 /**
  * Encapsulate logic for choosing id2s for request workload.
+ * 
  * @author tarmstrong
  *
  */
 public class ID2Chooser {
 
   /*
-   * Constants controlling the desired probability of a link for (id1, link_type, id2)
-   * existing for a given operation.  must be > 0
+   * Constants controlling the desired probability of a link for (id1, link_type,
+   * id2)
+   * existing for a given operation. must be > 0
    */
   public static final double P_GET_EXIST = 0.5; // Mix of new and pre-loaded
   public static final double P_UPDATE_EXIST = 0.9; // Mostly pre-loaded
@@ -67,7 +69,7 @@ public class ID2Chooser {
   private final int requesterID;
 
   public ID2Chooser(Properties props, long startid1, long maxid1,
-                    int nrequesters, int requesterID) {
+      int nrequesters, int requesterID) {
     this.startid1 = startid1;
     this.maxid1 = maxid1;
     this.nrequesters = nrequesters;
@@ -82,12 +84,12 @@ public class ID2Chooser {
     linkTypeCount = ConfigUtil.getInt(props, Config.LINK_TYPE_COUNT, 1);
     linkDist = LinkDistributions.loadLinkDistribution(props, startid1, maxid1);
     nLinksShuffler = RealDistribution.getShuffler(DistributionType.LINKS,
-                                                 maxid1 - startid1);
+        maxid1 - startid1);
   }
-
 
   /**
    * Choose an ids
+   * 
    * @param rng
    * @param id1
    * @param link_type
@@ -95,29 +97,29 @@ public class ID2Chooser {
    * @return
    */
   public long chooseForLoad(Random rng, long id1, long link_type,
-                                                  long outlink_ix) {
+      long outlink_ix) {
     if (randomid2max == 0) {
-      return id1 + outlink_ix;
+      return 1 + (id1 + outlink_ix - 1) % (maxid1 - 1);
     } else {
-      return rng.nextInt((int)randomid2max);
+      return rng.nextInt((int) randomid2max);
     }
   }
 
   /**
    * Choose an id2 for an operation given an id1
+   * 
    * @param id1
    * @param linkType
    * @param pExisting approximate probability that id should be in
-   *        existing range
+   *                  existing range
    * @return
    */
   public long chooseForOp(Random rng, long id1, long linkType,
-                                                double pExisting) {
+      double pExisting) {
     long nlinks = calcLinkCount(id1, linkType);
     long range = calcID2Range(pExisting, nlinks);
     return chooseForOpInternal(rng, id1, range);
   }
-
 
   public long[] chooseMultipleForOp(Random rng, long id1, long linkType,
       int nid2s, double pExisting) {
@@ -131,7 +133,7 @@ public class ID2Chooser {
         if (id2gen_config == 1) {
           id2 = fixId2(id2, nrequesters, requesterID, randomid2max);
         }
-        id2s[i] =  id2;
+        id2s[i] = id2;
       }
     } else {
       for (int i = 0; i < nid2s; i++) {
@@ -151,6 +153,7 @@ public class ID2Chooser {
 
   /**
    * Check if id2 is in first n elements of id2s
+   * 
    * @param id2s
    * @param i
    * @param id2
@@ -165,23 +168,22 @@ public class ID2Chooser {
     return false;
   }
 
-
   private long calcID2Range(double pExisting, long nlinks) {
-    long range = (long) Math.ceil((1/pExisting) * nlinks);
+    long range = (long) Math.ceil((1 / pExisting) * nlinks);
     range = Math.max(1, range);// Ensure non-empty range
     return range;
   }
 
-
   /**
    * Internal helper to choose id
+   * 
    * @param rng
    * @param id1
    * @param range range size of id2s to select within
    * @return
    */
   private long chooseForOpInternal(Random rng, long id1, long range) {
-    assert(range >= 1);
+    assert (range >= 1);
     // We want to sometimes add a link that already exists and sometimes
     // add a new link. So generate id2 such that it has roughly pExisting
     // chance of already existing.
@@ -189,9 +191,9 @@ public class ID2Chooser {
     // random id2 upto randomid2max).
     long id2;
     if (randomid2max == 0) {
-      id2 = id1 + rng.nextInt((int)range);
+      id2 = id1 + rng.nextInt((int) range);
     } else {
-      id2 = rng.nextInt((int)randomid2max);
+      id2 = rng.nextInt((int) randomid2max);
     }
 
     if (id2gen_config == 1) {
@@ -202,22 +204,24 @@ public class ID2Chooser {
   }
 
   public boolean sameShuffle;
+
   /**
    * Calculates the original number of outlinks for a given id1 (i.e. the
    * number that would have been loaded)
    * Sets sameShuffle field to true if shuffled was same as original
+   * 
    * @return number of links for this id1
    */
   public long calcTotalLinkCount(long id1) {
-    assert(id1 >= startid1 && id1 < maxid1);
-    // Shuffle.  A low id after shuffling means many links, a high means few
+    assert (id1 >= startid1 && id1 < maxid1);
+    // Shuffle. A low id after shuffling means many links, a high means few
     long shuffled;
     if (linkDist.doShuffle()) {
       shuffled = startid1 + nLinksShuffler.invertPermute(id1 - startid1);
     } else {
       shuffled = id1;
     }
-    assert(shuffled >= startid1 && shuffled < maxid1);
+    assert (shuffled >= startid1 && shuffled < maxid1);
     sameShuffle = shuffled == id1;
     long nlinks = linkDist.getNlinks(shuffled);
     return nlinks;
@@ -228,10 +232,11 @@ public class ID2Chooser {
   // 2. new_id2 % nrequesters = requestersId;
   // 3. smaller or equal to randomid2max unless randomid2max = 0
   private static long fixId2(long id2, long nrequesters,
-                             long requesterID, long randomid2max) {
+      long requesterID, long randomid2max) {
 
     long newid2 = id2 - (id2 % nrequesters) + requesterID;
-    if ((newid2 > randomid2max) && (randomid2max > 0)) newid2 -= nrequesters;
+    if ((newid2 > randomid2max) && (randomid2max > 0))
+      newid2 -= nrequesters;
     return newid2;
   }
 
@@ -257,7 +262,7 @@ public class ID2Chooser {
     long totCount = calcTotalLinkCount(id1);
     long minCount = totCount / linkTypeCount;
     long leftOver = totCount - minCount;
-    int typeNum = (int)(linkType -LinkStore.DEFAULT_LINK_TYPE);
+    int typeNum = (int) (linkType - LinkStore.DEFAULT_LINK_TYPE);
     if (typeNum < leftOver) {
       return minCount + 1;
     } else {

@@ -264,7 +264,7 @@ public class LinkStoreMysql extends GraphStore {
       msg += "Error is probably non-transient, will abort operation.";
       logger.error(msg);
     }
-    retry = false;
+    // retry = false;
     return retry;
   }
 
@@ -309,8 +309,8 @@ public class LinkStoreMysql extends GraphStore {
         return addLinkImpl(dbid, l, noinverse);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "addLink")) {
-          // throw ex;
-          return false;
+          throw ex;
+          // return false;
         }
       }
     }
@@ -484,8 +484,8 @@ public class LinkStoreMysql extends GraphStore {
         return deleteLinkImpl(dbid, id1, link_type, id2, noinverse, expunge);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "deleteLink")) {
-          // throw ex;
-          return false;
+          throw ex;
+          // return false;
         }
       }
     }
@@ -615,8 +615,8 @@ public class LinkStoreMysql extends GraphStore {
         return getLinkImpl(dbid, id1, link_type, id2);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "getLink")) {
-          // throw ex;
-          return null;
+          throw ex;
+          // return null;
         }
       }
     }
@@ -639,8 +639,8 @@ public class LinkStoreMysql extends GraphStore {
         return multigetLinksImpl(dbid, id1, link_type, id2s);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "multigetLinks")) {
-          // throw ex;
-          return null;
+          throw ex;
+          // return null;
         }
       }
     }
@@ -711,8 +711,8 @@ public class LinkStoreMysql extends GraphStore {
             maxTimestamp, offset, limit);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "getLinkListImpl")) {
-          // throw ex;
-          return null;
+          throw ex;
+          // return null;
         }
       }
     }
@@ -1067,8 +1067,8 @@ public class LinkStoreMysql extends GraphStore {
         return deleteNodeImpl(dbid, type, id);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "deleteNode")) {
-          // throw ex;
-          return false;
+          throw ex;
+          // return false;
         }
       }
     }
