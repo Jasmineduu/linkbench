@@ -309,8 +309,8 @@ public class LinkStoreMysql extends GraphStore {
         return addLinkImpl(dbid, l, noinverse);
       } catch (SQLException ex) {
         if (!processSQLException(ex, "addLink")) {
-          throw ex;
-          // return false;
+          // throw ex;
+          return false;
         }
       }
     }
