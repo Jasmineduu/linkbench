@@ -311,7 +311,7 @@ public class LinkStoreMysql extends GraphStore {
     // delete only if nums = 0 (no node in linktable)
     int result = -1;
     while (results.next()) {
-    result = results.getInt(1);
+      result = results.getInt(1);
     }
     results.close();
     // int result = results.getInt(0);
@@ -321,7 +321,7 @@ public class LinkStoreMysql extends GraphStore {
     // delete only if nums = 0 (no node in linktable)
     int result2 = -1;
     while (results2.next()) {
-    result2 = results2.getInt(1);
+      result2 = results2.getInt(1);
     }
     results2.close();
 
@@ -331,6 +331,7 @@ public class LinkStoreMysql extends GraphStore {
           return addLinkImpl(dbid, l, noinverse);
         } else {
           return false;
+        }
       } catch (SQLException ex) {
         if (!processSQLException(ex, "addLink")) {
           // throw ex;
