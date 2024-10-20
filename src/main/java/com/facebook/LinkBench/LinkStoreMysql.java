@@ -304,35 +304,35 @@ public class LinkStoreMysql extends GraphStore {
   @Override
   public boolean addLink(String dbid, Link l, boolean noinverse)
       throws Exception {
-    // long id1 = l.id1;
-    // long id2 = l.id2;
-    // String query = "select count(*) from " + nodetable + " where id = " + id1;
-    // ResultSet results = stmt_ro.executeQuery(query);
-    // // delete only if nums = 0 (no node in linktable)
-    // int result = -1;
-    // while (results.next()) {
-    // result = results.getInt(1);
-    // }
-    // results.close();
-    // // int result = results.getInt(0);
+    long id1 = l.id1;
+    long id2 = l.id2;
+    String query = "select count(*) from " + nodetable + " where id = " + id1;
+    ResultSet results = stmt_ro.executeQuery(query);
+    // delete only if nums = 0 (no node in linktable)
+    int result = -1;
+    while (results.next()) {
+      result = results.getInt(1);
+    }
+    results.close();
+    // int result = results.getInt(0);
 
-    // String query2 = "select count(*) from " + nodetable + " where id = " + id2;
-    // ResultSet results2 = stmt_ro.executeQuery(query2);
-    // // delete only if nums = 0 (no node in linktable)
-    // int result2 = -1;
-    // while (results2.next()) {
-    // result2 = results2.getInt(1);
-    // }
-    // results2.close();
+    String query2 = "select count(*) from " + nodetable + " where id = " + id2;
+    ResultSet results2 = stmt_ro.executeQuery(query2);
+    // delete only if nums = 0 (no node in linktable)
+    int result2 = -1;
+    while (results2.next()) {
+      result2 = results2.getInt(1);
+    }
+    results2.close();
 
     while (true) {
       try {
-        // if (result != 0 && result2 != 0) {
-        return addLinkImpl(dbid, l, noinverse);
-        // } else {
-        // logger.info("add link rejected");
-        // return false;
-        // }
+        if (result != 0 && result2 != 0) {
+          return addLinkImpl(dbid, l, noinverse);
+        } else {
+          logger.info("add link rejected");
+          return false;
+        }
       } catch (SQLException ex) {
         if (!processSQLException(ex, "addLink")) {
           // throw ex;
