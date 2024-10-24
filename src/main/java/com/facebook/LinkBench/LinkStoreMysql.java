@@ -167,6 +167,7 @@ public class LinkStoreMysql extends GraphStore {
     }
 
     conn_rw = DriverManager.getConnection(jdbcUrl, user, pwd);
+    conn_rw.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
     conn_rw.setAutoCommit(false);
 
     try {
@@ -307,7 +308,7 @@ public class LinkStoreMysql extends GraphStore {
     long id1 = l.id1;
     long id2 = l.id2;
     String query = "select count(*) from " + nodetable + " where id = " + id1;
-    ResultSet results = stmt_ro.executeQuery(query);
+    ResultSet results = stmt_rw.executeQuery(query);
     // delete only if nums = 0 (no node in linktable)
     int result = -1;
     while (results.next()) {
@@ -317,7 +318,7 @@ public class LinkStoreMysql extends GraphStore {
     // int result = results.getInt(0);
 
     String query2 = "select count(*) from " + nodetable + " where id = " + id2;
-    ResultSet results2 = stmt_ro.executeQuery(query2);
+    ResultSet results2 = stmt_rw.executeQuery(query2);
     // delete only if nums = 0 (no node in linktable)
     int result2 = -1;
     while (results2.next()) {
@@ -330,7 +331,8 @@ public class LinkStoreMysql extends GraphStore {
         if (result != 0 && result2 != 0) {
           return addLinkImpl(dbid, l, noinverse);
         } else {
-          logger.info("add link rejected");
+          // logger.info("add link rejected");
+          stmt_rw.executeQuery("commit;");
           return false;
         }
       } catch (SQLException ex) {
