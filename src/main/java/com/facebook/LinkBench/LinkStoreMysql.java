@@ -331,7 +331,7 @@ public class LinkStoreMysql extends GraphStore {
 
     while (true) {
       try {
-        if (result != 0 && result2 != 0) {
+        if (result > 0 && result2 > 0) {
           return addLinkImpl(dbid, l, noinverse);
         } else {
           stmt_rw.executeQuery("commit;");
